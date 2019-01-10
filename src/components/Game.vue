@@ -19,11 +19,20 @@
 
 <script>
 import Konva from 'konva';
+import io from 'socket.io-client';
 import Bar from './Bar.vue';
 import Ball from './Ball.vue';
-import { STAGE_SIZE } from './GameConfig.js';
+import { STAGE_SIZE } from '../configs/GameConfig.js';
 
 let player = 0;
+
+const socket = io('https://Shinokas-Not-Yet-Named-Game.sh1noka.repl.co/');
+
+socket.on('news', data => {
+    console.log('news', data);
+    console.log('server -> client: ', new Date() - new Date(data.now));
+    socket.emit('my other event', { my: 'data', now: new Date() });
+});
 
 export default {
     name: 'Game',
