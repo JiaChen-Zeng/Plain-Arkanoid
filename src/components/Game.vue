@@ -59,8 +59,10 @@ export default {
     },
     methods: {
         onTick(frame) {
-            for (const bar of this.$refs.bars) {
-                bar.moveTowards(this.mouse.x, frame.timeDiff);
+            if (!isNaN(this.mouse.x)) {
+                for (const bar of this.$refs.bars) {
+                    bar.moveTowards(this.mouse.x, frame.timeDiff);
+                }
             }
 
             for (const ball of this.$refs.balls) {
