@@ -1,5 +1,10 @@
 <template>
-    <v-stage ref="stage" :config="stageSize" @mousemove="onMouseMove">
+    <v-stage
+        ref="stage"
+        :config="stageSize"
+        @mousemove="onMouseMove"
+        @touchmove="onTouchMove"
+    >
         <v-layer>
             <bar
                 ref="bars"
@@ -24,14 +29,13 @@ import Bar from './Bar.vue';
 import Ball from './Ball.vue';
 import { STAGE_SIZE } from '../configs/GameConfig.js';
 
-let player = 0;
+let player = NaN;
 
-const socket = io('https://Shinokas-Not-Yet-Named-Game.sh1noka.repl.co/');
+const socket = io('https://Plain-Arkanoid--sh1noka.repl.co');
 
-socket.on('news', data => {
-    console.log('news', data);
-    console.log('server -> client: ', new Date() - new Date(data.now));
-    socket.emit('my other event', { my: 'data', now: new Date() });
+socket.on('player-enter', data => {
+    player = data.player;
+    console.log(player);
 });
 
 export default {
@@ -45,10 +49,16 @@ export default {
             stageSize: STAGE_SIZE,
             bars: [{ player: 0 }, { player: 1 }],
             balls: [{ player: 0 }, { player: 1 }],
-            mouse: {
-                x: NaN,
-                y: NaN
-            }
+            mouse: [
+                {
+                    x: NaN,
+                    y: NaN
+                },
+                {
+                    x: NaN,
+                    y: NaN
+                }
+            ]
         };
     },
     mounted() {
@@ -58,28 +68,39 @@ export default {
         ).start();
 
         // test code
-        setTimeout(
-            () =>
-                this.$refs.balls.forEach(ball => {
-                    ball.start();
-                }),
-            1000
-        );
+        socket.on('bar-move-ok', data => {
+            this.mouse[data.player] = data.mouse;
+        });
+        setTimeout(this.start, 1000);
     },
     methods: {
-        onTick(frame) {
-            if (!isNaN(this.mouse.x)) {
-                for (const bar of this.$refs.bars) {
-                    bar.moveTowards(this.mouse.x, frame.timeDiff);
-                }
+        start() {
+            for (const ball of this.$refs.balls) {
+                ball.start();
             }
+        },
+        onTick(frame) {
+            this.$refs.bars.forEach((bar, index) => {
+                if (isNaN(this.mouse[index].x)) return;
+                bar.moveTowards(this.mouse[index].x, frame.timeDiff);
+            });
 
             for (const ball of this.$refs.balls) {
                 ball.move(frame.timeDiff);
             }
         },
         onMouseMove(event) {
-            this.mouse = { x: event.evt.offsetX, y: event.evt.offsetY };
+            socket.emit('bar-move', {
+                x: event.evt.clientX,
+                y: event.evt.clientY
+            });
+            // this.mouse = { x: event.evt.offsetX, y: event.evt.offsetY };
+        },
+        onTouchMove(event) {
+            socket.emit('bar-move', {
+                x: event.evt.targetTouches[0].clientX,
+                y: event.evt.targetTouches[0].clientY
+            });
         }
     }
 };
