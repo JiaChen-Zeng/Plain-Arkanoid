@@ -18,6 +18,10 @@
                 :key="'ball-' + index"
                 v-bind="ball"
             />
+            <v-text
+                v-if="watcher"
+                text="Two players are ready. You can only watch the game."
+            />
         </v-layer>
     </v-stage>
 </template>
@@ -29,14 +33,7 @@ import Bar from './Bar.vue';
 import Ball from './Ball.vue';
 import { STAGE_SIZE } from '../configs/GameConfig.js';
 
-let player = NaN;
-
 const socket = io('https://Plain-Arkanoid--sh1noka.repl.co');
-
-socket.on('player-enter', data => {
-    player = data.player;
-    console.log(player);
-});
 
 export default {
     name: 'Game',
@@ -46,6 +43,8 @@ export default {
     },
     data() {
         return {
+            show: true,
+            player: NaN,
             stageSize: STAGE_SIZE,
             bars: [{ player: 0 }, { player: 1 }],
             balls: [{ player: 0 }, { player: 1 }],
@@ -60,6 +59,17 @@ export default {
                 }
             ]
         };
+    },
+    computed: {
+        watcher() {
+            return 2 <= this.player;
+        }
+    },
+    created() {
+        socket.on('player-enter', data => {
+            this.player = data.player;
+            console.log(this.player);
+        });
     },
     mounted() {
         new Konva.Animation(
@@ -90,6 +100,8 @@ export default {
             }
         },
         onMouseMove(event) {
+            if (this.watcher) return;
+
             socket.emit('bar-move', {
                 x: event.evt.clientX,
                 y: event.evt.clientY
@@ -97,6 +109,8 @@ export default {
             // this.mouse = { x: event.evt.offsetX, y: event.evt.offsetY };
         },
         onTouchMove(event) {
+            if (this.watcher) return;
+
             socket.emit('bar-move', {
                 x: event.evt.targetTouches[0].clientX,
                 y: event.evt.targetTouches[0].clientY
